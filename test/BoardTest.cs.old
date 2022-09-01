@@ -1,0 +1,208 @@
+using NUnit.Framework;
+using Pushpush;
+
+using static Pushpush.Team;
+using static Pushpush.Piece;
+using static Pushpush.Direction;
+using static Pushpush.MoveKind;
+
+[TestFixture]
+public class BoardTest
+{
+
+  [TestCaseSource(nameof(When_NormalMoveToEmptyPosition_Then_MoveHappends_TestCases))]
+  public void When_NormalMoveToEmptyPosition_Then_MoveHappends(Piece piece, Position piecePosition, Direction direction)
+  {
+    Board board = new Board();
+    board.Add(piecePosition, piece);
+    Move move = new Move(piece.team, piecePosition, direction, Normal);
+    Assert.IsTrue(board.isMoveValid(move));
+    board.makeMove(move);
+    Assert.AreEqual(board[move.nextPos], piece);
+    Assert.IsFalse(board.ContainsKey(piecePosition));
+  }
+  static object[] When_NormalMoveToEmptyPosition_Then_MoveHappends_TestCases =
+  {
+    new object[] {WhitePiece(1), new Position(1,2), up},
+    new object[] {WhitePiece(2), new Position(2,1), right},
+    new object[] {WhitePiece(3), new Position(7,7), down+left},
+    new object[] {WhitePiece(4), new Position(4,4), right+up},
+    new object[] {BlackPiece(1), new Position(3,6), right+down},
+    new object[] {BlackPiece(2), new Position(1,5), down},
+    new object[] {BlackPiece(3), new Position(6,2), left},
+    new object[] {BlackPiece(4), new Position(5,3), left+up}
+  };
+
+  public void When_MoveStartsWithBall_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_MoveToOutside_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_MoveToOutOfRange_Then_MoveNotHappends()
+  {
+
+  }
+
+  [TestCaseSource(nameof(When_ValidPushWouldHappen_Then_MoveHappends_TestCases))]
+  public void When_ValidPushWouldHappen_Then_MoveHappends(Position pos, Direction dir, Piece[] pieces)
+  {
+    Board board = new Board();
+    Position currentPos = pos;
+    foreach (Piece piece in pieces)
+    {
+      board.Add(currentPos, piece);
+      currentPos += dir;
+    }
+    Move move = new Move(pieces[0].team, pos, dir, Normal);
+    Assert.IsTrue(board.isMoveValid(move));
+    board.makeMove(move);
+    Assert.IsFalse(board.ContainsKey(pos));
+    currentPos = pos + dir;
+    foreach (Piece piece in pieces)
+    {
+      if (currentPos.isValid)
+      {
+        Assert.IsTrue(board.ContainsKey(currentPos));
+        Assert.AreEqual(board[currentPos], piece);
+      }
+      currentPos += dir;
+    }
+  }
+  static object[] When_ValidPushWouldHappen_Then_MoveHappends_TestCases =
+  {
+    new object[] {new Position(2,7), left, new Piece[] {BlackPiece(2), BlackPiece(1)} },
+    new object[] {new Position(3,7), left, new Piece[] {BlackPiece(3), BlackPiece(2), BlackPiece(1)} }
+  };
+
+  public void When_PieceIsPushOutSide_Then_ThatPieceDisapears()
+  {
+
+  }
+
+  public void When_PushIsNotValidDueForce_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_OneMoveToOpponentFour_Then_OneAssesinateFour()
+  {
+
+  }
+
+  public void When_OneMoveToOwnFour_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_DeflectedMoveToNotBall_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_DeflectedMoveToBallInInterior_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_DeflectedMoveStartingInInterior_Then_MoveNotHappends()
+  {
+
+  }
+
+  public void When_ValidDeflectedMove_Then_MoveHappends()
+  {
+
+  }
+
+  public void When_DeflectedMoveWouldMoveAnotherPiece_Then_MoveNotHappends()
+  {
+
+  }
+
+
+
+
+  [TestCaseSource(nameof(When_BallIsPushedIntoBlackGoalZone_Then_WhiteWins_TestCases))]
+  public void When_BallIsPushedIntoBlackGoalZone_Then_WhiteWins(Piece piece, Position piecePosition, Position ballPosition)
+  {
+    Board board = new Board();
+    board.Add(piecePosition, piece);
+    board.Add(ballPosition, Piece.Ball);
+    Assume.That(board.winner.isNone);
+    Move move = new Move(White, piecePosition, ballPosition - piecePosition, Normal);
+    Assert.IsTrue(board.isMoveValid(move));
+    board.makeMove(move);
+    Assert.IsTrue(board.winner.isWhite);
+    Assert.IsTrue(board.ballPosition.teamGoal.isBlack);
+  }
+  static object[] When_BallIsPushedIntoBlackGoalZone_Then_WhiteWins_TestCases =
+  {
+    new object[] {WhitePiece(1), new Position(4,6), new Position(4,7)},
+    new object[] {WhitePiece(2), new Position(3,6), new Position(4,7)},
+    new object[] {WhitePiece(3), new Position(1,6), new Position(1,7)},
+    new object[] {WhitePiece(4), new Position(1,6), new Position(2,7)},
+    new object[] {WhitePiece(1), new Position(7,6), new Position(7,7)},
+    new object[] {WhitePiece(2), new Position(7,6), new Position(6,7)},
+    new object[] {WhitePiece(3), new Position(6,6), new Position(5,7)}
+  };
+
+  [TestCaseSource(nameof(When_BallIsPushedIntoWhiteGoalZone_Then_BlacWins_TestCases))]
+  public void When_BallIsPushedIntoWhiteGoalZone_Then_BlacWins(Piece piece, Position piecePosition, Position ballPosition)
+  {
+    Board board = new Board();
+    board.Add(piecePosition, piece);
+    board.Add(ballPosition, Piece.Ball);
+    Assume.That(board.winner.isNone);
+    Move move = new Move(Black, piecePosition, ballPosition - piecePosition, Normal);
+    Assert.IsTrue(board.isMoveValid(move));
+    board.makeMove(move);
+    Assert.IsTrue(board.winner.isBlack);
+    Assert.IsTrue(board.ballPosition.teamGoal.isWhite);
+  }
+  static object[] When_BallIsPushedIntoWhiteGoalZone_Then_BlacWins_TestCases =
+  {
+    new object[] {BlackPiece(1), new Position(4,2), new Position(4,1)},
+    new object[] {BlackPiece(2), new Position(3,2), new Position(4,1)},
+    new object[] {BlackPiece(3), new Position(1,2), new Position(1,1)},
+    new object[] {BlackPiece(4), new Position(1,2), new Position(2,1)},
+    new object[] {BlackPiece(1), new Position(7,2), new Position(7,1)},
+    new object[] {BlackPiece(2), new Position(7,2), new Position(6,1)},
+    new object[] {BlackPiece(3), new Position(6,2), new Position(5,1)}
+  };
+
+  [TestCaseSource(nameof(When_BallWouldBePushedIntoCornersOrOutside_Then_MoveNotHappends_TestCases))]
+  public void When_BallWouldBePushedIntoCornersOrOutside_Then_MoveNotHappends(Piece piece, Position piecePosition, Position ballPosition)
+  {
+    Board board = new Board();
+    board.Add(piecePosition, piece);
+    board.Add(ballPosition, Piece.Ball);
+    Move move = new Move(piece.team, piecePosition, ballPosition - piecePosition, Normal);
+    Assert.IsFalse(board.isMoveValid(move));
+  }
+  static object[] When_BallWouldBePushedIntoCornersOrOutside_Then_MoveNotHappends_TestCases =
+  {
+    new object[]{WhitePiece(1),new Position(2,2), new Position(1,1)},
+    new object[]{WhitePiece(2),new Position(2,6), new Position(1,7)},
+    new object[]{WhitePiece(3),new Position(6,6), new Position(7,7)},
+    new object[]{WhitePiece(4),new Position(6,2), new Position(7,1)},
+    new object[]{BlackPiece(1),new Position(2,4), new Position(1,4)},
+    new object[]{BlackPiece(2),new Position(2,1), new Position(1,1)},
+    new object[]{BlackPiece(3),new Position(6,6), new Position(7,5)},
+    new object[]{BlackPiece(4),new Position(6,5), new Position(7,6)}
+  };
+
+  public void When_MultipiecePushMoveBallOutside_Then_ActAsInOnePiecePush()
+  {
+
+  }
+
+  public void When_BallWouldBePushedToItselftTeamZone_Then_MoveNotHappends()
+  {
+
+  }
+}
